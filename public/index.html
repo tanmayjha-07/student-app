@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Student Records</title>
+   
+</head>
+<body>
+    <header>
+        <h1>Student Record Management System</h1>
+    </header>
+
+    <main>
+        <section class="panel">
+            <h2>Add Student</h2>
+            <div id="message" class="message"></div>
+            <form id="studentForm">
+                <label>
+                    Name
+                    <input id="name" name="name" required>
+                </label>
+                <label>
+                    Roll Number
+                    <input id="rollNumber" name="rollNumber" required>
+                </label>
+                <label>
+                    Branch
+                    <input id="branch" name="branch">
+                </label>
+                <label>
+                    Marks
+                    <input id="marks" name="marks" type="number" min="0" max="100">
+                </label>
+                <button type="submit">Add Student</button>
+            </form>
+        </section>
+
+        <section class="panel">
+            <h2>All Students</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Name</th>
+                        <th>Roll Number</th>
+                        <th>Branch</th>
+                        <th>Marks</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="studentsBody"></tbody>
+            </table>
+        </section>
+    </main>
+
+    <script>
+        const form = document.getElementById('studentForm');
+        const message = document.getElementById('message');
+        const studentsBody = document.getElementById('studentsBody');
+
+        function showMessage(text, type) {
+            message.textContent = text;
+            message.className = `message ${type}`;
+        }
+
+        async function requestJson(url, options) {
+            const response = await fetch(url, options);
+            const data = await response.json().catch(() => ({}));
+
+            if (!response.ok) {
+                throw new Error(data.message || 'Request failed');
+            }
+
+            return data;
+        }
+
+        async function loadStudents() {
+            try {
+                const students = await requestJson('/api/students');
+                studentsBody.innerHTML = '';
+
+                if (students.length === 0) {
+                    studentsBody.innerHTML = '<tr><td data-label="Students" colspan="5">No students found.</td></tr>';
+                    return;
+                }
+
+                students.forEach((student) => {
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td data-label="Name">${student.name}</td>
+                        <td data-label="Roll Number">${student.rollNumber}</td>
+                        <td data-label="Branch">${student.branch || ''}</td>
+                        <td data-label="Marks">
+                            <input type="number" min="0" max="100" value="${student.marks ?? ''}" aria-label="Marks for ${student.name}">
+                        </td>
+                        <td data-label="Actions">
+                            <div class="actions">
+                                <button class="secondary" type="button">Update Marks</button>
+                                <button class="delete" type="button">Delete</button>
+                            </div>
+                        </td>
+                    `;
+
+                    row.querySelector('.secondary').addEventListener('click', async () => {
+                        const marks = row.querySelector('input').value;
+                        await updateMarks(student._id, marks);
+                    });
+
+                    row.querySelector('.delete').addEventListener('click', async () => {
+                        await deleteStudent(student._id);
+                    });
+
+                    studentsBody.appendChild(row);
+                });
+            } catch (error) {
+                alert(error.message);
+            }
+        }
+
+        async function addStudent(event) {
+            event.preventDefault();
+
+            const student = {
+                name: form.name.value.trim(),
+                rollNumber: form.rollNumber.value.trim(),
+                branch: form.branch.value.trim(),
+                marks: form.marks.value === '' ? undefined : Number(form.marks.value)
+            };
+
+            try {
+                await requestJson('/api/students', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify(student)
+                });
+                form.reset();
+                alert('Student added successfully.');
+                await loadStudents();
+            } catch (error) {
+                showMessage(error.message, 'error');
+            }
+        }
+
+        async function updateMarks(id, marks) {
+            try {
+                await requestJson(`/api/students/${id}`, {
+                    method: 'PUT',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({marks: marks === '' ? undefined : Number(marks)})
+                });
+                alert('Marks updated successfully.');
+                await loadStudents();
+            } catch (error) {
+                showMessage(error.message, 'error');
+            }
+        }
+
+        async function deleteStudent(id) {
+            try {
+                await requestJson(`/api/students/${id}`, {method: 'DELETE'});
+                alert('Student deleted successfully.');
+                await loadStudents();
+            } catch (error) {
+                showMessage(error.message, 'error');
+            }
+        }
+
+        form.addEventListener('submit', addStudent);
+        loadStudents();
+    </script>
+</body>
+</html>
