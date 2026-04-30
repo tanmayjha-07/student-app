@@ -287,7 +287,7 @@
                     studentsBody.appendChild(row);
                 });
             } catch (error) {
-                showMessage(error.message, 'error');
+                alert(error.message, 'error');
             }
         }
 
@@ -311,7 +311,7 @@
                 alert('Student added successfully.');
                 await loadStudents();
             } catch (error) {
-                showMessage(error.message, 'error');
+                alert(error.message, 'error');
             }
         }
 
@@ -325,7 +325,7 @@
                 alert('Marks updated successfully.');
                 await loadStudents();
             } catch (error) {
-                showMessage(error.message, 'error');
+                alert(error.message, 'error');
             }
         }
 
@@ -335,7 +335,7 @@
                 alert('Student deleted successfully.');
                 await loadStudents();
             } catch (error) {
-                showMessage(error.message, 'error');
+                alert(error.message, 'error');
             }
         }
 
